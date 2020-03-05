@@ -148,7 +148,7 @@ namespace DreamCompiler.Lexer
 
         private Lexeme GetSymbol(IToken token)
         {
-            Lexeme symbol = new Lexeme(LexemeType.Number);
+            Lexeme symbol = new Lexeme(LexemeType.Operator);
 
             var currentSymbol = token.GetTokenData();
             if (currentSymbol == '(' ||
@@ -164,6 +164,11 @@ namespace DreamCompiler.Lexer
                 return symbol;
             }
 
+            if (currentSymbol == '+' || currentSymbol == '/' || currentSymbol == '-' || currentSymbol == '*')
+            {
+                symbol.AddToken(token);
+                return symbol;
+            }
 
             if (currentSymbol == '=')
             {

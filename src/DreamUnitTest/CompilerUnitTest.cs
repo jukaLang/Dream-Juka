@@ -43,6 +43,21 @@ namespace DreamUnitTest
         }
 
 
+        [TestMethod]
+        public void TestBinaryExpression()
+        {
+            string program = "3 + 4 / 5";
+            MemoryStream s = new MemoryStream(ASCIIEncoding.ASCII.GetBytes(program));
+
+            LexicalAnalysis lexicalAnalysis = new LexicalAnalysis(new Scanner(s));
+            var lexemeList = lexicalAnalysis.Analyze();
+
+            SyntaxAnalyzer sa = new SyntaxAnalyzer();
+            sa.Analyze(lexemeList);
+
+        }
+
+
         //[TestMethod]
         public void TestScannerWithMemoryStream()
         {
@@ -54,6 +69,7 @@ namespace DreamUnitTest
 
             //Assert.AreEqual(s.Length, lexemeList.Count, "The numbers of tokens are not accurate");
         }
+
 
         public void TestFullFileCompile()
         {

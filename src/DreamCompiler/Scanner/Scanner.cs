@@ -118,7 +118,7 @@ namespace DreamCompiler.Scanner
         NumberDigit,
         WhiteSpace,
         Eof,
-        Symbol,
+        Symbol, 
     }
 
     public enum LexemeType
@@ -126,6 +126,7 @@ namespace DreamCompiler.Scanner
         Identifier,
         Number,
         WhiteSpace,
+        Operator,
     }
 
     public class Lexeme : IDisposable
@@ -262,11 +263,16 @@ namespace DreamCompiler.Scanner
 
         public bool MoveNext()
         {
-            //position++;
-            //return (position < lexemeList.Count);
-            throw new NotImplementedException();
+            position++;
+            if (position < lexemeList.Count)
+            {
+                return true;
+            }
+
+            return false;
         }
 
+        /*
         public bool MoveNextEx()
         {
             position++;
@@ -279,14 +285,24 @@ namespace DreamCompiler.Scanner
             {
                 return true;
             }
-            else
+
+            return false;
+        }
+        */
+
+        public bool PeekNext(out Lexeme lexeme)
+        {
+            lexeme = null;
+
+            if (position + 1 < lexemeList.Count)
             {
-                return false;
+                lexeme = lexemeList[position];
+                return true;
             }
 
-            throw new InvalidOperationException();
+            return false;
         }
-
+        /*
         public bool MoveBackEx()
         {
             position--;
@@ -307,6 +323,7 @@ namespace DreamCompiler.Scanner
 
             throw new InvalidOperationException();
         }
+        */
 
         public void Reset()
         {
