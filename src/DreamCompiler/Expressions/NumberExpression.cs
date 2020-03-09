@@ -9,6 +9,6 @@ namespace DreamCompiler.Expressions
 {
     class NumberExpression : IExpression
     {
-        public Lexeme number;
+        public Token number;
     }
 }

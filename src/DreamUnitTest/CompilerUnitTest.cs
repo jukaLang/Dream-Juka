@@ -46,7 +46,7 @@ namespace DreamUnitTest
         [TestMethod]
         public void TestBinaryExpression()
         {
-            string program = "3 + 4 / 5";
+            string program = "31+4";
             MemoryStream s = new MemoryStream(ASCIIEncoding.ASCII.GetBytes(program));
 
             LexicalAnalysis lexicalAnalysis = new LexicalAnalysis(new Scanner(s));

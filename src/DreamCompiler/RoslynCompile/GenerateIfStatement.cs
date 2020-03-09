@@ -51,7 +51,7 @@ namespace DreamCompiler.RoslynCompile
 
 
             var ifStatement = SyntaxFactory.IfStatement(expression, statementSyntax);
-            //SyntaxFactory.FieldDeclaration(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxTriviaList.Create()))
+            //SyntaxFactory.FieldDeclaration(SyntaxFactory.PredefinedType(SyntaxFactory.Lexeme(SyntaxTriviaList.Create()))
 
             return ifStatement;
         }

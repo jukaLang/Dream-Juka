@@ -41,14 +41,14 @@ namespace DreamCompiler.Scanner
         }
 
 
-        internal IToken ReadToken()
+        internal ILexeme ReadToken()
         {
             TokenType tokenType = TokenType.NotValid;
 
             if (IsEOF())
             {
                 tokenType = TokenType.Eof;
-                return new Token(tokenType);
+                return new Lexeme(tokenType);
             }
             else
             {
@@ -61,14 +61,6 @@ namespace DreamCompiler.Scanner
                 else if (IsDigit(t) || IsNumber(t))
                 {
                     tokenType = TokenType.NumberDigit;
-                    //NumberDigit numberDigit = null;
-                    //int value;
-                    //if (int.TryParse(t.ToString(), out value))
-                    //{
-                    //    numberDigit = new NumberDigit() { tokenIntValue = value };
-                    //}
-
-                    //return numberDigit;
                 }
                 else if (IsPunctuation(t) || IsSymbol(t))
                 {
@@ -79,7 +71,7 @@ namespace DreamCompiler.Scanner
                     tokenType = TokenType.WhiteSpace;
                 }
 
-                return new Token(tokenType, t);
+                return new Lexeme(tokenType, t);
             }
         }
 
@@ -127,25 +119,26 @@ namespace DreamCompiler.Scanner
         Number,
         WhiteSpace,
         Operator,
+        Eof,
     }
 
-    public class Lexeme : IDisposable
+    public class Token : IDisposable
     {
-        private List<IToken> tokenList = new List<IToken>();
+        private List<ILexeme> tokenList = new List<ILexeme>();
         private LexemeType lexemeType;
         private bool isKeyWord;
         private string tokenAsString = String.Empty;
         // ReSharper disable once InconsistentNaming
         private KeyWords.KeyWordsEnum keyWordType;
 
-        internal Lexeme(LexemeType ltype)
+        internal Token(LexemeType ltype)
         {
             this.lexemeType = ltype;
         }
 
-        internal void AddToken(IToken token)
+        internal void AddLexeme(ILexeme lexeme)
         {
-            tokenList.Add(token);
+            tokenList.Add(lexeme);
         }
 
         public bool IsKeyWord()
@@ -190,13 +183,13 @@ namespace DreamCompiler.Scanner
 #if DEBUG
         internal void PrintLexeme(string lexemeType, Action action = null)
         {
-            Trace.Write($"Lexeme - Type:{lexemeType} {{ '");
+            Trace.Write($"Token - Type:{lexemeType} {{ '");
 
             if (action == null)
             {
                 foreach (var token in tokenList)
                 {
-                    if (token is Token t)
+                    if (token is Lexeme t)
                     {
                         Trace.Write(t.data);
                     }
@@ -216,17 +209,17 @@ namespace DreamCompiler.Scanner
     }
 
 
-    public class LexemeListManager : IEnumerable
+    public class TokenListManager : IEnumerable
     {
-        private List<Lexeme> lexemList;
+        private List<Token> lexemList;
 
-        public LexemeListManager(List<Lexeme> list)
+        public TokenListManager(List<Token> list)
         {
             this.lexemList = list;
         }
 
         /*
-        public Lexeme NextNotWhiteSpace(out Lexeme lexeme)
+        public Token NextNotWhiteSpace(out Token lexeme)
         {
             while (lexemList[currentLexem].LexemeType == LexemeType.WhiteSpace)
             {
@@ -243,20 +236,20 @@ namespace DreamCompiler.Scanner
             return (IEnumerator) GetEnumerator();
         }
 
-        public LexemeEnumerator GetEnumerator()
+        public TokenEnumerator GetEnumerator()
         {
-            return new LexemeEnumerator(this.lexemList);
+            return new TokenEnumerator(this.lexemList);
         }
 
     }
 
 
-    public class LexemeEnumerator : IEnumerator
+    public class TokenEnumerator : IEnumerator
     {
-        private List<Lexeme> lexemeList;
+        private List<Token> lexemeList;
         private int position = -1;
 
-        public LexemeEnumerator(List<Lexeme> list)
+        public TokenEnumerator(List<Token> list)
         {
             lexemeList = list;
         }
@@ -290,13 +283,13 @@ namespace DreamCompiler.Scanner
         }
         */
 
-        public bool PeekNext(out Lexeme lexeme)
+        public bool PeekNext(out Token token)
         {
-            lexeme = null;
+            token = null;
 
             if (position + 1 < lexemeList.Count)
             {
-                lexeme = lexemeList[position];
+                token = lexemeList[position];
                 return true;
             }
 
@@ -332,7 +325,7 @@ namespace DreamCompiler.Scanner
 
         object IEnumerator.Current => Current;
 
-        public Lexeme Current
+        public Token Current
         {
             get
             {
@@ -348,24 +341,24 @@ namespace DreamCompiler.Scanner
         }
     }
 
-    public interface IToken
+    public interface ILexeme
     {
         TokenType TokenType();
 
         char GetTokenData();
     }
 
-    internal class Token : IToken
+    internal class Lexeme : ILexeme
     {
         internal TokenType tokenType;
         internal char data;
 
-        internal Token(TokenType t)
+        internal Lexeme(TokenType t)
         {
             this.tokenType = t;
         }
 
-        internal Token(TokenType t, char tokenData) : this(t)
+        internal Lexeme(TokenType t, char tokenData) : this(t)
         {
             this.data = tokenData;
         }
