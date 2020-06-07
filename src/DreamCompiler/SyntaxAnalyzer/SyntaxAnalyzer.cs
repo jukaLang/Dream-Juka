@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using DreamCompiler.Constants;
+using DreamCompiler.Expressions;
 using DreamCompiler.Scanner;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
@@ -12,23 +13,51 @@ namespace DreamCompiler.SyntaxAnalyzer
 {
     public class SyntaxAnalyzer
     {
-        private LexemeListManager list;
+        private TokenListManager list;
         private int currentLocation = 0;
-        private LexemeEnumerator lexemeEnumerator;
+        private TokenEnumerator _tokenEnumerator;
 
-        public void Analyze(LexemeListManager listManager)
+        public void Analyze(TokenListManager listManager)
         {
             list = listManager;
 
-            lexemeEnumerator = listManager.GetEnumerator();
-            
-            if (lexemeEnumerator.MoveNextEx())
+            _tokenEnumerator = listManager.GetEnumerator();
+
+            while (_tokenEnumerator.MoveNext())
             {
-                KeyWords(lexemeEnumerator.Current);
+                if (_tokenEnumerator.Current.LexemeType == LexemeType.Identifier)
+                {
+                    Token next = null;
+                    _tokenEnumerator.PeekNext(out next);
+
+                    if (next.IsKeyWord())
+                    {
+                        KeyWords(_tokenEnumerator.Current);
+                    }
+
+                    if (next.LexemeType == LexemeType.Number)
+                    {
+                        ParseBinaryExpression();
+                    }
+                }
             }
         }
 
-        private void KeyWords(Lexeme lex)
+        private void ParseBinaryExpression()
+        {
+            
+            if (_tokenEnumerator.MoveNext() && _tokenEnumerator.Current.LexemeType == LexemeType.Number)
+            {
+                NumberExpression leftNumber = new NumberExpression() {number = _tokenEnumerator.Current};
+
+                Token next = null;
+                _tokenEnumerator.PeekNext(out next);
+
+              //  if (next != null && next.LexemeType == LexemeType.WhiteSpace)
+            }
+        }
+
+        private void KeyWords(Token lex)
         {
             Trace.WriteLine(lex.ToString());
             switch (lex.KeyWordType)
@@ -51,21 +80,21 @@ namespace DreamCompiler.SyntaxAnalyzer
 
         private void ParseFunction()
         {
-            while (lexemeEnumerator.MoveNextEx())
+            while (_tokenEnumerator.MoveNext())
             {
-                var current = lexemeEnumerator.Current;
+                var current = _tokenEnumerator.Current;
                 if (current.IsKeyWord() && current.KeyWordType == Lexer.KeyWords.KeyWordsEnum.If)
                 {
-                    lexemeEnumerator.MoveNextEx();
-                    List<Lexeme> ifExpression = new List<Lexeme>();
+                    _tokenEnumerator.MoveNext();
+                    List<Token> ifExpression = new List<Token>();
 
-                    if (lexemeEnumerator.Current.ToString().Equals("("))
+                    if (_tokenEnumerator.Current.ToString().Equals("("))
                     {
-                        lexemeEnumerator.MoveNextEx();
-                        while (!lexemeEnumerator.Current.ToString().Equals(")"))
+                        _tokenEnumerator.MoveNext();
+                        while (!_tokenEnumerator.Current.ToString().Equals(")"))
                         {
-                            ifExpression.Add(lexemeEnumerator.Current);
-                            lexemeEnumerator.MoveNextEx();
+                            ifExpression.Add(_tokenEnumerator.Current);
+                            _tokenEnumerator.MoveNext();
                         }
                     }
                 }
@@ -75,9 +104,9 @@ namespace DreamCompiler.SyntaxAnalyzer
         private void ParseIfStatement()
         {
             /*
-            if (lexemeEnumerator.MoveNextSkipWhite())
+            if (_tokenEnumerator.MoveNextSkipWhite())
             {
-                var token = lexemeEnumerator.Current;
+                var token = _tokenEnumerator.Current;
                 if (!token.IsKeyWord() && token.ToString().Equals(SymbolConstants.LeftParen))
                 {
                     ParseExpression();
@@ -89,7 +118,7 @@ namespace DreamCompiler.SyntaxAnalyzer
 
         private void ParseExpression()
         {
-            var token = lexemeEnumerator.MoveNextEx();
+            var token = _tokenEnumerator.MoveNext();
 
         }
     }

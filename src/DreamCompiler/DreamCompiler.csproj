@@ -8,8 +8,8 @@
     <ProjectGuid>{C6C15D26-01CC-4877-9D4F-5EE89E1FE5EC}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>DReAMCompiler</RootNamespace>
-    <AssemblyName>DReAMCompiler</AssemblyName>
+    <RootNamespace>DreamCompiler</RootNamespace>
+    <AssemblyName>DreamCompiler</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp>
@@ -187,6 +187,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Error\ErrorListener.cs" />
+    <Compile Include="Expressions\BinaryExpression.cs" />
+    <Compile Include="Expressions\IExpression.cs" />
+    <Compile Include="Expressions\NumberExpression.cs" />
     <Compile Include="Lexer\Keywords.cs" />
     <Compile Include="Lexer\LexicalAnalysis.cs" />
     <Compile Include="RoslynCompile\GenerateBinaryExpression.cs" />

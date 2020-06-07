@@ -51,7 +51,7 @@ namespace DreamCompiler.Visitors
         //public override CSharpSyntaxNode VisitFunctionCall([NotNull] DreamGrammarParser.FunctionCallContext context)
         //{
         //    SyntaxToken name = SyntaxFactory.Identifier(context.funcName().GetText());
-        //    SyntaxToken returnType = SyntaxFactory.Token(SyntaxKind.VoidKeyword);
+        //    SyntaxToken returnType = SyntaxFactory.Lexeme(SyntaxKind.VoidKeyword);
 
         //    var parameters = new List<ArgumentSyntax>();
 
@@ -218,13 +218,13 @@ namespace DreamCompiler.Visitors
         //    switch (keyword)
         //    {
         //        case "int":
-        //            return SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.IntKeyword));
+        //            return SyntaxFactory.PredefinedType(SyntaxFactory.Lexeme(SyntaxKind.IntKeyword));
         //        case "float":
-        //            return SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.FloatKeyword));
+        //            return SyntaxFactory.PredefinedType(SyntaxFactory.Lexeme(SyntaxKind.FloatKeyword));
         //        case "double":
-        //            return SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.DoubleKeyword));
+        //            return SyntaxFactory.PredefinedType(SyntaxFactory.Lexeme(SyntaxKind.DoubleKeyword));
         //        case "string":
-        //            return SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.StringKeyword));
+        //            return SyntaxFactory.PredefinedType(SyntaxFactory.Lexeme(SyntaxKind.StringKeyword));
         //    }
 
         //    throw new Exception("no valid keyword");

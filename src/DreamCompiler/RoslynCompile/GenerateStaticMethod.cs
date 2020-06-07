@@ -22,7 +22,7 @@ namespace DreamCompiler.RoslynCompile
     //        }
 
     //        SyntaxToken name = SyntaxFactory.Identifier(methodName);
-    //        SyntaxToken returnType = SyntaxFactory.Token(SyntaxKind.VoidKeyword);
+    //        SyntaxToken returnType = SyntaxFactory.Lexeme(SyntaxKind.VoidKeyword);
 
     //        var statementList = new List<StatementSyntax>();
     //        var tlist = new List<SyntaxNodeOrToken>();
@@ -49,8 +49,8 @@ namespace DreamCompiler.RoslynCompile
     //        {
     //            return SyntaxFactory.MethodDeclaration(SyntaxFactory.PredefinedType(returnType), name).WithBody( block)
     //                .WithModifiers( SyntaxFactory.TokenList( new[]{
-    //                    SyntaxFactory.Token(SyntaxKind.StaticKeyword),
-    //                    SyntaxFactory.Token(SyntaxKind.PublicKeyword)}))
+    //                    SyntaxFactory.Lexeme(SyntaxKind.StaticKeyword),
+    //                    SyntaxFactory.Lexeme(SyntaxKind.PublicKeyword)}))
     //                    .WithParameterList( SyntaxFactory.ParameterList( SyntaxFactory.SeparatedList<ParameterSyntax>(tlist)));
     //        }
 
@@ -60,8 +60,8 @@ namespace DreamCompiler.RoslynCompile
     //                 .WithModifiers(
     //        SyntaxFactory.TokenList(
     //            new[]{
-    //                SyntaxFactory.Token(SyntaxKind.StaticKeyword),
-    //                SyntaxFactory.Token(SyntaxKind.PublicKeyword)}));
+    //                SyntaxFactory.Lexeme(SyntaxKind.StaticKeyword),
+    //                SyntaxFactory.Lexeme(SyntaxKind.PublicKeyword)}));
     //    }
     }
 }
