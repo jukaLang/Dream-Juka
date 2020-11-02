@@ -117,7 +117,6 @@ namespace DreamUnitTest
             {
                 LexicalAnalysis lexicalAnalysis = new LexicalAnalysis(new Scanner(@"..\..\..\..\examples\test.jlr"));
                 lexicalAnalysis.Analyze();
-
             }
             catch (Exception ex)
             {

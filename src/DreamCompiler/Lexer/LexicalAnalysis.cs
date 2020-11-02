@@ -21,6 +21,7 @@ namespace DReAMCompiler.Lexer
             {
                 {KeyWords.KeyWordsEnum.Main, MainAction},
                 {KeyWords.KeyWordsEnum.Function, MainAction },
+                //{KeyWords.KeyWordsEnum.If, ParseIfStatement },
             };
         }
 
@@ -148,8 +149,53 @@ namespace DReAMCompiler.Lexer
 
                     IToken isEqualSign = GetSymbol(scanner.ReadToken());
                     IToken isLeftBracket = GetPunctuation(scanner.ReadToken());
+
+                    List<IStatement> statements = new List<IStatement>();
+                    while (true)
+                    {
+                        IStatement statement;
+                        bool isStatement = ParseStatement(out statement);
+
+                        if (isStatement)
+                        {
+                            statements.Add(statement);
+                            continue;
+                        }
+
+                        break;
+                    }
                 }
             }
+        }
+
+        private bool ParseStatement(out IStatement statement)
+        {
+            IToken identifier = GetIdentifier(scanner.ReadToken());
+
+            if (identifier.TokenType()== TokenType.IdentifierType && KeyWords.keyWordNames.Contains(identifier.ToString().ToLower()))
+            {
+                string currentKeyword = identifier.ToString().ToLower();
+
+                switch (currentKeyword)
+                {
+                    case "if":
+                        ParseIfStatement(out statement);
+                        break;
+                    case "while":
+                        break;
+                    case "function":
+                        break;
+                }
+            }
+            statement = new IfStatement();
+
+            return false;
+        }
+
+        private bool ParseIfStatement(out IStatement ifStatement)
+        {
+            ifStatement = new IfStatement();
+            return true;
         }
     };
 }
