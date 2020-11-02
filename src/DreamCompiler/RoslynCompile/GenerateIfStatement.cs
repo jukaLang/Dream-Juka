@@ -8,7 +8,6 @@ namespace DreamCompiler.RoslynCompile
 {
     using Antlr4.Runtime.Tree;
     using Antlr4.Runtime;
-    using DreamCompiler.Grammar;
     using DreamCompiler.Visitors;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
@@ -39,20 +38,20 @@ namespace DreamCompiler.RoslynCompile
 
             for (int i = 2; i < count; i++)
             {
-                if (node.children[i] is DreamGrammarParser.BinaryExpressionContext)
-                {
-                    var binaryExpression = new GenerateBinaryExpression();
-                    binaryExpression.Walk(node.children[i] as ParserRuleContext)
-                        .PostWalk()
-                        .Eval(true);
+                //if (node.children[i] is DreamGrammarParser.BinaryExpressionContext)
+                //{
+                //    var binaryExpression = new GenerateBinaryExpression();
+                //    binaryExpression.Walk(node.children[i] as ParserRuleContext)
+                //        .PostWalk()
+                //        .Eval(true);
 
-                    expression = binaryExpression.BinaryExpressionSyntax();
-                }
+                //    expression = binaryExpression.BinaryExpressionSyntax();
+                //}
             }
 
 
             var ifStatement = SyntaxFactory.IfStatement(expression, statementSyntax);
-            //SyntaxFactory.FieldDeclaration(SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxTriviaList.Create()))
+            //SyntaxFactory.FieldDeclaration(SyntaxFactory.PredefinedType(SyntaxFactory.Lexeme(SyntaxTriviaList.Create()))
 
             return ifStatement;
         }

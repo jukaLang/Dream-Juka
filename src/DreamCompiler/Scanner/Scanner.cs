@@ -1,77 +1,78 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.IO;
-using System.IO.MemoryMappedFiles;
 using System.Diagnostics;
-using System.Dynamic;
-using Microsoft.CodeAnalysis.VisualBasic.Syntax;
-using DreamCompiler.Tokens;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using DreamCompiler.Lexer;
+using static System.Char;
+using System.Runtime.Remoting.Messaging;
 
 namespace DreamCompiler.Scanner
 {
     public class Scanner
     {
         private int position;
-        byte[] fileData;
-        
+        private byte[] fileData;
+
         public Scanner(string path)
         {
             using (FileStream fileStream = File.Open(path, FileMode.Open))
             {
                 double fileLength = fileStream.Length;
 
-                this.fileData = new byte[(int)fileLength];
-                fileStream.Read(this.fileData, 0, (int)fileLength);
+                this.fileData = new byte[(int) fileLength];
+                fileStream.Read(this.fileData, 0, (int) fileLength);
+            }
+        }
+
+        public Scanner(MemoryStream memoryStream)
+        {
+            int memoryStreamLength = (int) memoryStream.Length;
+
+            fileData = new byte[memoryStreamLength];
+
+            int dataRead = memoryStream.Read(fileData, 0, memoryStreamLength);
+
+            if (dataRead != memoryStreamLength)
+            {
+                throw new Exception("bad memory read");
             }
         }
 
 
-        internal IToken ReadToken()
+        internal ILexeme ReadToken()
         {
+            TokenType tokenType = TokenType.NotValid;
+
             if (IsEOF())
             {
-                return new Eof();
+                tokenType = TokenType.Eof;
+                return new Lexeme(tokenType);
             }
-
-            char t = (char)fileData[position++];
-
-            if (Char.IsLetter(t))
+            else
             {
-                return new Identifier() { tokenIdentifierValue = t.ToString() };
-            }
+                char t = (char) fileData[position++];
 
-            if (Char.IsDigit(t) || Char.IsNumber(t))
-            {
-                NumberDigit numberDigit = null;
-                int value;
-                if (int.TryParse(t.ToString(), out value))
+                if (IsLetter(t))
                 {
-                    numberDigit = new NumberDigit() { tokenIntValue = value };
+                    tokenType = TokenType.Character;
+                }
+                else if (IsDigit(t) || IsNumber(t))
+                {
+                    tokenType = TokenType.NumberDigit;
+                }
+                else if (IsPunctuation(t) || IsSymbol(t))
+                {
+                    tokenType = TokenType.Symbol;
+                }
+                else if (Char.IsWhiteSpace(t))
+                {
+                    tokenType = TokenType.WhiteSpace;
                 }
 
-                return numberDigit;
+                return new Lexeme(tokenType, t);
             }
-
-            if (Char.IsPunctuation(t))
-            {
-                return new Punctuation() { punctuationValue = t.ToString() };
-            }
-
-            if (Char.IsSymbol(t))
-            {
-                return new Symbol() { symbolValue  = t.ToString() };
-            }
-
-            if (char.IsWhiteSpace(t))
-            {
-                return new WhiteSpace() { whiteSpaceValue = t.ToString() };
-            }
-
-            throw new InvalidOperationException($"no operator for token type char {t}");
         }
 
         internal void PutTokenBack()
@@ -91,7 +92,7 @@ namespace DreamCompiler.Scanner
 
         internal bool IsWhiteSpace()
         {
-            if (Char.IsWhiteSpace((char)fileData[position]))
+            if (Char.IsWhiteSpace((char) fileData[position]))
             {
                 return true;
             }
@@ -104,120 +105,273 @@ namespace DreamCompiler.Scanner
 
     public enum TokenType
     {
-        StringType,
-        IdentifierType,
-        NumberDigitType,
-        WhiteSpaceType,
-        PunctuationType,
-        EofType,
-        SymbolType,
+        NotValid,
+        Character,
+        NumberDigit,
+        WhiteSpace,
+        Eof,
+        Symbol, 
     }
 
-    public interface IToken
+    public enum LexemeType
+    {
+        Identifier,
+        Number,
+        WhiteSpace,
+        Operator,
+        Eof,
+    }
+
+    public class Token : IDisposable
+    {
+        private List<ILexeme> tokenList = new List<ILexeme>();
+        private LexemeType lexemeType;
+        private bool isKeyWord;
+        private string tokenAsString = String.Empty;
+        // ReSharper disable once InconsistentNaming
+        private KeyWords.KeyWordsEnum keyWordType;
+
+        internal Token(LexemeType ltype)
+        {
+            this.lexemeType = ltype;
+        }
+
+        internal void AddLexeme(ILexeme lexeme)
+        {
+            tokenList.Add(lexeme);
+        }
+
+        public bool IsKeyWord()
+        {
+            return isKeyWord;
+        }
+
+        public override string ToString()
+        {
+            if (string.IsNullOrEmpty(tokenAsString))
+            {
+                var s = new StringBuilder();
+                foreach (var t in tokenList)
+                {
+                    s.Append(t.GetTokenData());
+                }
+
+                return s.ToString();
+            }
+
+            return tokenAsString;
+        }
+
+        public LexemeType LexemeType => lexemeType;
+
+        internal KeyWords.KeyWordsEnum KeyWordType => keyWordType;
+
+        void IDisposable.Dispose()
+        {
+            this.tokenAsString = ToString();
+
+            if (lexemeType == LexemeType.Identifier)
+            {
+                if (KeyWords.keyValuePairs.TryGetValue(this.tokenAsString, out KeyWords.KeyWordsEnum keyWordValue))
+                {
+                    isKeyWord = true;
+                    this.keyWordType = keyWordValue;
+                }
+            }
+        }
+
+#if DEBUG
+        internal void PrintLexeme(string lexemeType, Action action = null)
+        {
+            Trace.Write($"Token - Type:{lexemeType} {{ '");
+
+            if (action == null)
+            {
+                foreach (var token in tokenList)
+                {
+                    if (token is Lexeme t)
+                    {
+                        Trace.Write(t.data);
+                    }
+                }
+            }
+            else
+            {
+                action();
+            }
+
+            Trace.Write("' }");
+
+            Trace.WriteLine(string.Empty);
+
+        }
+#endif
+    }
+
+
+    public class TokenListManager : IEnumerable
+    {
+        private List<Token> lexemList;
+
+        public TokenListManager(List<Token> list)
+        {
+            this.lexemList = list;
+        }
+
+        /*
+        public Token NextNotWhiteSpace(out Token lexeme)
+        {
+            while (lexemList[currentLexem].LexemeType == LexemeType.WhiteSpace)
+            {
+                currentLexem++;
+            }
+
+            lexeme = lexemList[currentLexem];
+            return lexeme;
+        }
+        */
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return (IEnumerator) GetEnumerator();
+        }
+
+        public TokenEnumerator GetEnumerator()
+        {
+            return new TokenEnumerator(this.lexemList);
+        }
+
+    }
+
+
+    public class TokenEnumerator : IEnumerator
+    {
+        private List<Token> lexemeList;
+        private int position = -1;
+
+        public TokenEnumerator(List<Token> list)
+        {
+            lexemeList = list;
+        }
+
+        public bool MoveNext()
+        {
+            position++;
+            if (position < lexemeList.Count)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /*
+        public bool MoveNextEx()
+        {
+            position++;
+            if (lexemeList[position].LexemeType == LexemeType.WhiteSpace)
+            {
+                return MoveNextEx();
+            }
+
+            if (position < lexemeList.Count)
+            {
+                return true;
+            }
+
+            return false;
+        }
+        */
+
+        public bool PeekNext(out Token token)
+        {
+            token = null;
+
+            if (position + 1 < lexemeList.Count)
+            {
+                token = lexemeList[position];
+                return true;
+            }
+
+            return false;
+        }
+        /*
+        public bool MoveBackEx()
+        {
+            position--;
+            if (lexemeList[position].LexemeType == LexemeType.WhiteSpace)
+            {
+                return MoveNextEx();
+            }
+
+            if (position < 0)
+            {
+                return false;
+            }
+
+            if (position >= 0)
+            {
+                return true;
+            }
+
+            throw new InvalidOperationException();
+        }
+        */
+
+        public void Reset()
+        {
+            position = -1;
+        }
+
+        object IEnumerator.Current => Current;
+
+        public Token Current
+        {
+            get
+            {
+                try
+                {
+                    return lexemeList[position];
+                }
+                catch (IndexOutOfRangeException)
+                {
+                    throw new InvalidOperationException();
+                }
+            }
+        }
+    }
+
+    public interface ILexeme
     {
         TokenType TokenType();
+
+        char GetTokenData();
     }
 
-
-    public abstract class TokenImpl : IToken
+    internal class Lexeme : ILexeme
     {
-        public string tokenStringValue { get; set; }
+        internal TokenType tokenType;
+        internal char data;
 
-        public int tokenIntValue { get; set; }
-
-        public string tokenIdentifierValue { get; set; }
-
-        public string symbolValue { get; set; }
-
-        public string whiteSpaceValue { get; set; }
-
-        abstract public TokenType TokenType();
-    }
-
-    public class StringToken : TokenImpl
-    {
-        public override string ToString()
+        internal Lexeme(TokenType t)
         {
-            return this.tokenStringValue;
+            this.tokenType = t;
         }
 
-        public override TokenType TokenType()
+        internal Lexeme(TokenType t, char tokenData) : this(t)
         {
-            return DreamCompiler.Scanner.TokenType.StringType;
+            this.data = tokenData;
+        }
+
+        public char GetTokenData()
+        {
+            return this.data;
+        }
+
+        public TokenType TokenType()
+        {
+            return this.tokenType;
         }
     }
 
-    public class Identifier : TokenImpl
-    {
-        public override string ToString()
-        {
-            return this.tokenIdentifierValue;
-        }
-
-        public override TokenType TokenType()
-        {
-            return DreamCompiler.Scanner.TokenType.IdentifierType;
-        }
-    }
-
-    public class NumberDigit : TokenImpl
-    {
-        public override string ToString()
-        {
-            return this.tokenIntValue.ToString();
-        }
-
-        public override TokenType TokenType()
-        {
-            return DreamCompiler.Scanner.TokenType.NumberDigitType;
-        }
-    }
-
-    public class WhiteSpace : TokenImpl
-    {
-        public override string ToString()
-        {
-            return this.whiteSpaceValue.ToString();
-        }
-
-        public override TokenType TokenType()
-        {
-            return DreamCompiler.Scanner.TokenType.WhiteSpaceType;
-        }
-    }
-
-    public class Punctuation : TokenImpl
-    {
-        public string punctuationValue { get; set; }
-
-        public override string ToString()
-        {
-            return this.punctuationValue;
-        }
-        public override TokenType TokenType()
-        {
-            return DreamCompiler.Scanner.TokenType.PunctuationType;
-        }
-    }
-
-    public class Eof : TokenImpl
-    {
-        public override TokenType TokenType()
-        {
-            return DreamCompiler.Scanner.TokenType.EofType;
-        }
-    }
-
-    public class Symbol : TokenImpl
-    {
-        public override TokenType TokenType()
-        {
-            return DreamCompiler.Scanner.TokenType.SymbolType;
-        }
-
-        public override string ToString()
-        {
-            return this.symbolValue;
-        }
-    }
 }

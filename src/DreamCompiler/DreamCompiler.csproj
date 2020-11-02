@@ -8,8 +8,8 @@
     <ProjectGuid>{C6C15D26-01CC-4877-9D4F-5EE89E1FE5EC}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>DReAMCompiler</RootNamespace>
-    <AssemblyName>DReAMCompiler</AssemblyName>
+    <RootNamespace>DreamCompiler</RootNamespace>
+    <AssemblyName>DreamCompiler</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp>
@@ -187,21 +187,20 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Error\ErrorListener.cs" />
-    <Compile Include="Lexer\IStatement.cs" />
+    <Compile Include="Expressions\BinaryExpression.cs" />
+    <Compile Include="Expressions\IExpression.cs" />
+    <Compile Include="Expressions\NumberExpression.cs" />
     <Compile Include="Lexer\Keywords.cs" />
     <Compile Include="Lexer\LexicalAnalysis.cs" />
     <Compile Include="RoslynCompile\GenerateBinaryExpression.cs" />
     <Compile Include="Compiler.cs" />
     <Compile Include="Constants\Constants.cs" />
-    <Compile Include="grammar\DreamGrammarBaseVisitor.cs" />
-    <Compile Include="grammar\DreamGrammarLexer.cs" />
-    <Compile Include="grammar\DreamGrammarParser.cs" />
-    <Compile Include="grammar\DreamGrammarVisitor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RoslynCompile\GenerateIfStatement.cs" />
     <Compile Include="RoslynCompile\GenerateStaticMethod.cs" />
     <Compile Include="RoslynCompile\RoslynCompile.cs" />
     <Compile Include="Scanner\Scanner.cs" />
+    <Compile Include="SyntaxAnalyzer\SyntaxAnalyzer.cs" />
     <Compile Include="Tokens\Token.cs" />
     <Compile Include="Tokens\TokenKind.cs" />
     <Compile Include="Visitors\DreamRoslynVisitor.cs" />
@@ -212,10 +211,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="grammar\DreamGrammar.g4" />
-    <None Include="grammar\DreamGrammar.tokens" />
-    <None Include="grammar\DreamGrammarLexer.interp" />
-    <None Include="grammar\DreamGrammarLexer.tokens" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -224,8 +219,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>java -jar $(ProjectDir)jars\antlr-4.7.1-complete.jar -Dlanguage=CSharp $(ProjectDir)grammar\DreamGrammar.g4 -no-listener -visitor -package DreamCompiler.Grammar
-</PreBuildEvent>
+    <PreBuildEvent>
+    </PreBuildEvent>
   </PropertyGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

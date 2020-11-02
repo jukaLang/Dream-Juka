@@ -4,134 +4,283 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
+using Token = DreamCompiler.Scanner.Token;
+// ReSharper disable All
 
-namespace DReAMCompiler.Lexer
+
+namespace DreamCompiler.Lexer
 {
     public class LexicalAnalysis
     {
-        private Scanner scanner;
-        public Dictionary<KeyWords.KeyWordsEnum, Action<IToken>> keywordActions = new Dictionary<KeyWords.KeyWordsEnum, Action<IToken>>();
-        public LexicalAnalysis(Scanner scanner)
+        private Scanner.Scanner scanner;
+        public Dictionary<KeyWords.KeyWordsEnum, Action<ILexeme>> keywordActions = new Dictionary<KeyWords.KeyWordsEnum, Action<ILexeme>>();
+        
+        
+        public LexicalAnalysis(Scanner.Scanner scanner)
         {
             this.scanner = scanner;
 
-            keywordActions = new Dictionary<KeyWords.KeyWordsEnum, Action<IToken>>()
+            keywordActions = new Dictionary<KeyWords.KeyWordsEnum, Action<ILexeme>>()
             {
                 {KeyWords.KeyWordsEnum.Main, MainAction},
                 {KeyWords.KeyWordsEnum.Function, MainAction },
-                //{KeyWords.KeyWordsEnum.If, ParseIfStatement },
             };
         }
 
-        public void Analyze()
+        public TokenListManager Analyze()
         {
+            List<Token> lexemeList = new List<Token>();
             while (true)
             {
-                IToken token = scanner.ReadToken();
-                if (token.TokenType() == TokenType.EofType)
+                ILexeme lexeme = scanner.ReadToken();
+                if (lexeme.TokenType() == TokenType.Eof)
                 {
-                    return;
+                    break;
                 }
 
-                if (token.TokenType() == TokenType.IdentifierType)
+                switch (lexeme.TokenType())
                 {
-                    VisitIdentifier(token);
-                }
+                    case TokenType.Character:
+                    {
+                        lexemeList.Add(GetIdentifier(lexeme));
+                        break;
+                    }
 
-                Trace.Write(token.ToString());
+                    case TokenType.NumberDigit:
+                    {
+                        lexemeList.Add(GetNumber(lexeme));
+                        break;
+                    }
+
+                    case TokenType.Symbol:
+                    {
+                        lexemeList.Add(GetSymbol(lexeme));
+                        break;
+                    }
+
+                    case TokenType.WhiteSpace:
+                    {
+                        lexemeList.Add(GetWhiteSpace(lexeme));
+                        break;
+                    }
+                }
             }
+
+            return new TokenListManager(lexemeList);
+        }
+
+        //public void 
+
+
+        private Token GetIdentifier(ILexeme lexeme)
+        {
+            if (lexeme.TokenType() == TokenType.WhiteSpace)
+            {
+                while (lexeme.TokenType() == TokenType.WhiteSpace)
+                {
+                    lexeme = scanner.ReadToken();
+                }
+            }
+
+            using (Token identifier = new Token(LexemeType.Identifier))
+            {
+                identifier.AddLexeme(lexeme);
+
+                while (true)
+                {
+                    var next = this.scanner.ReadToken();
+                    if (next.TokenType() == TokenType.Symbol || next.TokenType() == TokenType.WhiteSpace)
+                    {
+                        this.scanner.PutTokenBack();
+                        break;
+                    }
+
+                    identifier.AddLexeme(next);
+                }
+
+                identifier.PrintLexeme("Identifier");
+
+                return identifier;
+            }
+
+            throw new Exception();
         }
 
 
-        private IToken GetIdentifier(IToken token)
+        private Token GetNumber(ILexeme lexeme)
         {
-            if (token.TokenType() == TokenType.WhiteSpaceType)
-            {
-                while (token.TokenType() == TokenType.WhiteSpaceType)
-                {
-                    token = scanner.ReadToken();
-                }
-            }
-
-            StringBuilder identifier = new StringBuilder();
-            identifier.Append(token.ToString());
-
-            IToken next;
+            Token number = new Token(LexemeType.Number);
+            number.AddLexeme(lexeme);
 
             while (true)
             {
-                next = this.scanner.ReadToken();
-                if (next.TokenType() == TokenType.SymbolType || next.TokenType() == TokenType.WhiteSpaceType || next.TokenType() == TokenType.PunctuationType)
+                var next = scanner.ReadToken();
+
+                if (next.TokenType() == TokenType.Eof) 
+                {
+                    break;
+                }
+
+                if (next.TokenType() == TokenType.NumberDigit)
+                {
+                    number.AddLexeme(next);
+                }
+                else
                 {
                     this.scanner.PutTokenBack();
                     break;
                 }
-
-                identifier.Append(next.ToString());
             }
 
-            return new Identifier() { tokenIdentifierValue = identifier.ToString() };
+            number.PrintLexeme("Number");
+            return number;
         }
 
-        private IToken GetPunctuation(IToken token)
+        private ILexeme GetPunctuation(ILexeme lexeme)
         {
-            while (token.TokenType() == TokenType.WhiteSpaceType)
+            while (lexeme.TokenType() == TokenType.WhiteSpace)
             {
-                token = scanner.ReadToken();
+                lexeme = scanner.ReadToken();
             }
 
-            if (token.TokenType() == TokenType.PunctuationType)
+            if (lexeme.TokenType() == TokenType.Symbol)
             {
-                return token;
+                return lexeme;
             }
 
             throw new Exception("No Punctuation found;");
         }
 
-        private IToken GetSymbol(IToken token)
+        private Token GetSymbol(ILexeme lexeme)
         {
-            while (token.TokenType() == TokenType.WhiteSpaceType)
+            Token symbol = new Token(LexemeType.Operator);
+
+            var currentSymbol = lexeme.GetTokenData();
+            if (currentSymbol == '(' ||
+                currentSymbol == ')' ||
+                currentSymbol == '"' ||
+                currentSymbol == '{' ||
+                currentSymbol == '}' ||
+                currentSymbol == ';'
+                )
             {
-                token = scanner.ReadToken();
+                symbol.AddLexeme(lexeme);
+                symbol.PrintLexeme("Symbol");
+                return symbol;
             }
 
-            if (token.TokenType() == TokenType.SymbolType)
+            if (currentSymbol == '+' || currentSymbol == '/' || currentSymbol == '-' || currentSymbol == '*')
             {
-                return token;
+                symbol.AddLexeme(lexeme);
+                symbol.PrintLexeme("Symbol");
+                return symbol;
             }
 
-            throw new Exception("No symbol found;");
+            if (currentSymbol == '=')
+            {
+                symbol.AddLexeme(lexeme);
+                while (true)
+                {
+                    var next = this.scanner.ReadToken();
+                    if (next.GetTokenData() == '=')
+                    {
+                        symbol.AddLexeme(next);
+                    }
+                    else
+                    {
+                        this.scanner.PutTokenBack();
+                        break;
+                    }
+                }
+            }
+            else if (currentSymbol == '<')
+            {
+                symbol.AddLexeme(lexeme);
+                while (true)
+                {
+                    var next = this.scanner.ReadToken();
+                    if (next.GetTokenData() == '=')
+                    {
+                        symbol.AddLexeme(next);
+                    }
+                    else
+                    {
+                        this.scanner.PutTokenBack();
+                        break;
+                    }
+                }
+            }
+
+            symbol.PrintLexeme("Symbol");
+            return symbol;
         }
 
-        private void VisitIdentifier(IToken token)
+        private Token GetWhiteSpace(ILexeme lexeme)
         {
-            IToken tokenIdentifier = GetIdentifier(token);
+            Token whiteSpace = new Token(LexemeType.WhiteSpace);
 
-            if (KeyWords.keyValuePairs.TryGetValue(tokenIdentifier.ToString(), out KeyWords.KeyWordsEnum keyWordsEnum))
+            if (lexeme.GetTokenData().Equals('\n') ||
+                lexeme.GetTokenData().Equals('\r') ||
+                lexeme.GetTokenData().Equals('\t') ||
+                lexeme.GetTokenData().Equals(' '))
+            {
+                whiteSpace.AddLexeme(lexeme);
+                whiteSpace.PrintLexeme("WhiteSpace", ()=>
+                {
+                    if (lexeme.GetTokenData().Equals('\n'))
+                    {
+                        Trace.Write("\\n");
+                    }
+                    else if (lexeme.GetTokenData().Equals('\r'))
+                    {
+                        Trace.Write("\\r");
+                    }
+                    else if (lexeme.GetTokenData().Equals('\t'))
+                    {
+                        Trace.Write("\\t");
+                    }
+                    else if (lexeme.GetTokenData().Equals(' '))
+                    {
+                        Trace.Write("_");
+                    }
+                });
+            }
+
+            return whiteSpace;
+        }
+
+        private void VisitIdentifier(ILexeme lexeme)
+        {
+            Token tokenIdentifier = GetIdentifier(lexeme);
+
+            /*
+            if (KeyWords.keyValuePairs.TryGetValue(tokenIdentifier.ToString(), out KeyWords.KeyWordType keyWordsEnum))
             {
                 if (keywordActions.ContainsKey(keyWordsEnum))
                 {
                     keywordActions[keyWordsEnum](tokenIdentifier);
                 }
             }
+            */
         }
 
-        private void MainAction(IToken token)
+        private void MainAction(ILexeme lexeme)
         {
-            if (token.TokenType() != TokenType.IdentifierType)
+            if (lexeme.TokenType() != TokenType.Character)
             {
                 throw new Exception("no function name");
             }
 
-            if (KeyWords.keyWordNames.Contains(token.ToString()))
+            if (KeyWords.keyWordNames.Contains(lexeme.ToString()))
             {
-                if (token.ToString().Equals(KeyWords.FUNCTION))
+                if (lexeme.ToString().Equals(KeyWords.FUNCTION))
                 {
 
-                    IToken functionName = GetIdentifier(scanner.ReadToken());
-                    IToken leftParen = GetPunctuation(scanner.ReadToken());
+                    Token functionName = GetIdentifier(scanner.ReadToken());
+                    ILexeme leftParen = GetPunctuation(scanner.ReadToken());
 
                     if (!leftParen.ToString().Equals(KeyWords.LPAREN))
                     {
@@ -140,62 +289,17 @@ namespace DReAMCompiler.Lexer
 
                     // TODO handle function parameters;
 
-                    IToken rightParen = GetPunctuation(scanner.ReadToken());
+                    ILexeme rightParen = GetPunctuation(scanner.ReadToken());
 
                     if (!rightParen.ToString().Equals(KeyWords.RPAREN))
                     {
                         throw new Exception();
                     }
 
-                    IToken isEqualSign = GetSymbol(scanner.ReadToken());
-                    IToken isLeftBracket = GetPunctuation(scanner.ReadToken());
-
-                    List<IStatement> statements = new List<IStatement>();
-                    while (true)
-                    {
-                        IStatement statement;
-                        bool isStatement = ParseStatement(out statement);
-
-                        if (isStatement)
-                        {
-                            statements.Add(statement);
-                            continue;
-                        }
-
-                        break;
-                    }
+                    Token isEqualSign = GetSymbol(scanner.ReadToken());
+                    ILexeme isLeftBracket = GetPunctuation(scanner.ReadToken());
                 }
             }
-        }
-
-        private bool ParseStatement(out IStatement statement)
-        {
-            IToken identifier = GetIdentifier(scanner.ReadToken());
-
-            if (identifier.TokenType()== TokenType.IdentifierType && KeyWords.keyWordNames.Contains(identifier.ToString().ToLower()))
-            {
-                string currentKeyword = identifier.ToString().ToLower();
-
-                switch (currentKeyword)
-                {
-                    case "if":
-                        ParseIfStatement(out statement);
-                        break;
-                    case "while":
-                        break;
-                    case "function":
-                        break;
-                }
-            }
-            statement = new IfStatement();
-
-            return false;
-        }
-
-        private bool ParseIfStatement(out IStatement ifStatement)
-        {
-            ifStatement = new IfStatement();
-            return true;
         }
     };
 }
